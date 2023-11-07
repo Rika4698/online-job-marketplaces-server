@@ -68,33 +68,7 @@ async function run() {
         res.send(result);
     })
     
-    // const postJobCollection = client.db('myJobDB').collection('myJob');
-        
-    // app.put('/my-job', async (req, res) => {
-    //         const data = req.body;
-    //         console.log(data);
-    //         const filter = {
-    //             $and: [
-    //                 { email: data.email },
-    //                 { prodId: data.id }
-    //             ]
-    //         };
-    //         const options = { upsert: true };
-    //         const myJob = {
-    //             $set: {
-    //                 prodId: data.id,
-    //                 email: data.email
-    //             }
-    //         }
-    //         const result = await postJobCollection.updateOne(filter, myJob, options);
-    //         res.send(result);
-    //     })
-    //     app.get('/my-job', async (req, res) => {
-    //         const cursor = postJobCollection.find();
-    //         const result = await cursor.toArray();
-    //         res.send(result);
-    //     })
-
+    
 
 
     // Send a ping to confirm a successful connection
