@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,7 +27,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     const jobCollection = client.db('JobDB').collection("job");
-    
+
     app.get('/jobs', async (req, res) => {
         const cursor = jobCollection.find();
         const result = await cursor.toArray();
@@ -41,6 +41,59 @@ async function run() {
         const result = await jobCollection.insertOne(newJob);
         res.send(result);
     })
+    app.get('/jobs/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await jobCollection.findOne(query);
+        res.send(result);
+    })
+    app.put('/jobs/:id', async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updateJob = req.body;
+        const job = {
+            $set: {
+                name: updateJob.name,
+                image: updateJob.image,
+                deadline: updateJob.deadline,
+                category: updateJob.category,
+                description: updateJob.description,
+                minPrice: updateJob.minPrice,
+                maxPrice: updateJob.maxPrice,
+
+            }
+        }
+        const result = await jobCollection.updateOne(filter, job, options);
+        res.send(result);
+    })
+    
+    // const postJobCollection = client.db('myJobDB').collection('myJob');
+        
+    // app.put('/my-job', async (req, res) => {
+    //         const data = req.body;
+    //         console.log(data);
+    //         const filter = {
+    //             $and: [
+    //                 { email: data.email },
+    //                 { prodId: data.id }
+    //             ]
+    //         };
+    //         const options = { upsert: true };
+    //         const myJob = {
+    //             $set: {
+    //                 prodId: data.id,
+    //                 email: data.email
+    //             }
+    //         }
+    //         const result = await postJobCollection.updateOne(filter, myJob, options);
+    //         res.send(result);
+    //     })
+    //     app.get('/my-job', async (req, res) => {
+    //         const cursor = postJobCollection.find();
+    //         const result = await cursor.toArray();
+    //         res.send(result);
+    //     })
 
 
 
