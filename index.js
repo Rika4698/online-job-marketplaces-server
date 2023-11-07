@@ -27,6 +27,12 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     const jobCollection = client.db('JobDB').collection("job");
+    
+    app.get('/jobs', async (req, res) => {
+        const cursor = jobCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    })
 
 
     app.post('/jobs', async (req, res) => {
