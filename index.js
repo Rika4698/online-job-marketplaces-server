@@ -68,7 +68,21 @@ async function run() {
         res.send(result);
     })
     
-    
+    app.delete('/jobs', async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        // const data = req.body;
+        // console.log(data);
+        // const query = { prodId: data.id };
+        // const filter = {
+        //     $and: [
+        //         { email: data.email },
+        //         { prodId: data.id }
+        //     ]
+        // }
+        const result = await jobCollection.deleteOne(filter);
+        res.send(result);
+    })
 
 
     // Send a ping to confirm a successful connection
