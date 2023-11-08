@@ -68,12 +68,12 @@ async function run() {
         res.send(result);
     })
     
-    app.delete('/jobs', async (req, res) => {
+    app.delete('/jobs/:id', async (req, res) => {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
         // const data = req.body;
         // console.log(data);
-        // const query = { prodId: data.id };
+        // // const query = { prodId: data.id };
         // const filter = {
         //     $and: [
         //         { email: data.email },
