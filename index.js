@@ -42,6 +42,12 @@ async function run() {
         const result = await jobCollection.insertOne(newJob);
         res.send(result);
     })
+    app.get('/bids', async (req, res) => {
+      const cursor = bidCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+  })
+
 
     app.post('/bids', async (req, res) => {
         const myBid = req.body;
