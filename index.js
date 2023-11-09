@@ -27,6 +27,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     const jobCollection = client.db('JobDB').collection("job");
+    const bidCollection = client.db('MyBidDB').collection("bids");
 
     app.get('/jobs', async (req, res) => {
         const cursor = jobCollection.find();
@@ -41,6 +42,14 @@ async function run() {
         const result = await jobCollection.insertOne(newJob);
         res.send(result);
     })
+
+    app.post('/bids', async (req, res) => {
+        const myBid = req.body;
+        console.log(myBid);
+        const result = await bidCollection.insertOne(myBid);
+        res.send(result);
+    })
+
     app.get('/jobs/:id', async (req, res) => {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
