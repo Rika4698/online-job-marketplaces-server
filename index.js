@@ -56,6 +56,20 @@ async function run() {
         res.send(result);
     })
 
+    app.patch('/bids/:id',async(req,res)=>{
+      const id = req.params.id;
+      const filter =  { _id: new ObjectId(id) };
+      const accepted = req.body;
+      console.log(accepted);
+      const updateDoc = {
+        $set:{
+          status: accepted.status
+        },
+      };
+      const result = await bidCollection.updateOne(filter,updateDoc);
+      res.send(result);
+    })
+
     app.get('/jobs/:id', async (req, res) => {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
