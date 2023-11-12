@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 
 //middleware
 
-app.use(cors({origin:['http://localhost:5173'], credentials:true}));
+app.use(cors({origin:['https://online-job-marketplaces-client.web.app'], credentials:true}));
 app.use(express.json());
 app.use(cookieParser());
 // {origin:'https://online-job-marketplaces-client.web.app'}
@@ -25,13 +25,13 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-const logger =(req, res, next)=>{
-  console.log('log: info',req.method,req.url);
-  next();
-}
+// const logger =(req, res, next)=>{
+//   console.log('log: info',req.method,req.url);
+//   next();
+// }
 const verifyToken = (req,res,next)=>{
-  const token = req?.cookies?.token;
-  console.log('token in the middleware',token);
+  const token = req.cookies?.token;
+  console.log('token in the verify',token);
   
   if(!token){
     return res.status(401).send({message:'unauthorized access'})
@@ -51,19 +51,22 @@ async function run() {
     // await client.connect();
     const jobCollection = client.db('JobDB').collection("job");
     const bidCollection = client.db('MyBidDB').collection("bids");
+
     // auth api
-    app.post('/jwt',logger,async(req,res)=>{
+    app.post('/jwt',async(req,res)=>{
       const user = req.body;
       console.log('user for token', user);
-      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn: '24h'});
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn: '1h'});
       res.cookie('token',token,{
         httpOnly:true,
-        secure:true,
-        sameSite:'none'
+        secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        // secure:true,
+        // sameSite:'none'
       })
       .send({success:true});
     })
-    app.post('/logout',logger,async(req,res)=>{
+    app.post('/logout',async(req,res)=>{
       const user = req.body;
       console.log('logging out',user);
       res.clearCookie('token',{maxAge:0}).send({success:true})
@@ -72,28 +75,29 @@ async function run() {
 
 
      //service api
-    app.get('/jobs',logger ,verifyToken,async (req, res) => {
-      console.log('token owner info', req.user);
+    app.get('/my-jobs/:email',verifyToken,async (req, res) => {
+      console.log('my-jobs', req.decoded);
       console.log('email',req.params.email);
-      // if(req.user.email !== req.query.email){
-      //   return res.status(403).send({message: 'forbidden access'})
-      // }
+      if(req.user.email !== req.params.email){
+        return res.status(403).send({message: 'forbidden access'})
+      }
       let query = {};
-      if(req.query?.email){
-        query = {email: req.query.email}
+      if(req.params?.email){
+        query = {email: req.params.email}
       }
       const result = await jobCollection.find(query).toArray();
       res.send(result);
     })
 
-    app.get('/jobs',logger ,verifyToken,async (req, res) => {
-      console.log('token owner info', req.user);
+    app.get('/jobs',async (req, res) => {
+      console.log('token owner inf0', req.user);
+     
         const cursor = jobCollection.find();
         const result = await cursor.toArray();
         res.send(result);
     })
-    app.get("/jobs/:id",logger, async (req, res) => {
-      console.log('cook cookies', req.cookies);
+    app.get("/jobs/:id",verifyToken, async (req, res) => {
+      console.log('job', req.cookies);
       console.log(req.query.email);
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -102,20 +106,20 @@ async function run() {
     });
 
 
-    app.post('/jobs',logger,verifyToken, async (req, res) => {
+    app.post('/jobs',verifyToken, async (req, res) => {
         const newJob = req.body;
         console.log(newJob);
         const result = await jobCollection.insertOne(newJob);
         res.send(result);
     })
 
-    app.get('/bids', logger,verifyToken, async (req, res) => {
+    app.get('/bids', verifyToken, async (req, res) => {
       const cursor = bidCollection.find();
       // const sortedBids = await bidCollection.find().sort({ status: 1 }).toArray();
       const result = await cursor.toArray();
       res.send(result);
   })
-    app.get('/my-bids',logger, verifyToken,async (req, res) => {
+    app.get('/my-bids', verifyToken,async (req, res) => {
       const cursor = bidCollection.find().sort({ status: 1 });
       // const sortedBids = await bidCollection.find().sort({ status: 1 }).toArray();
       const result = await cursor.toArray();
@@ -123,14 +127,14 @@ async function run() {
   })
 
 
-    app.post('/bids',logger, verifyToken,async (req, res) => {
+    app.post('/bids', verifyToken,async (req, res) => {
         const myBid = req.body;
         console.log(myBid);
         const result = await bidCollection.insertOne(myBid);
         res.send(result);
     })
 
-    app.patch('/bids/:id',logger,verifyToken,async(req,res)=>{
+    app.patch('/bids/:id',verifyToken,async(req,res)=>{
       const id = req.params.id;
       // console.log(id);
       const filter =  { _id: new ObjectId(id) };
@@ -145,7 +149,7 @@ async function run() {
       res.send(result);
     })
 
-    app.put('/jobs/:id',logger,verifyToken, async (req, res) => {
+    app.put('/jobs/:id',verifyToken, async (req, res) => {
         const id = req.params.id;
        
         const filter = { _id: new ObjectId(id) };
@@ -167,7 +171,7 @@ async function run() {
         res.send(result);
     })
     
-    app.delete('/jobs/:id',logger,verifyToken, async (req, res) => {
+    app.delete('/jobs/:id',verifyToken, async (req, res) => {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
         // const data = req.body;
