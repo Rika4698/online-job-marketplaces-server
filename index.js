@@ -9,7 +9,13 @@ const port = process.env.PORT || 5000;
 
 //middleware
 
-app.use(cors({origin:['https://online-job-marketplaces-client.web.app'], credentials:true}));
+app.use(cors({
+  origin:[
+    
+  'http://localhost:5173',
+  'https://online-job-marketplaces-client.web.app',
+  'https://online-job-marketplaces-client.firebaseapp.com',
+], credentials:true}));
 app.use(express.json());
 app.use(cookieParser());
 // {origin:'https://online-job-marketplaces-client.web.app'}
@@ -30,6 +36,7 @@ const client = new MongoClient(uri, {
 //   next();
 // }
 const verifyToken = (req,res,next)=>{
+  console.log('Cookies received by server:', req.cookies);
   const token = req.cookies?.token;
   console.log('token in the verify',token);
   
@@ -42,8 +49,8 @@ const verifyToken = (req,res,next)=>{
     }
     req.user = decoded;
     next();
-  })
-}
+  });
+};
 
 async function run() {
   try {
@@ -56,7 +63,7 @@ async function run() {
     app.post('/jwt',async(req,res)=>{
       const user = req.body;
       console.log('user for token', user);
-      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn: '1h'});
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn: '5h'});
       res.cookie('token',token,{
         httpOnly:true,
         secure: process.env.NODE_ENV === 'production',
@@ -65,37 +72,61 @@ async function run() {
         // sameSite:'none'
       })
       .send({success:true});
-    })
+    });
+
     app.post('/logout',async(req,res)=>{
       const user = req.body;
       console.log('logging out',user);
-      res.clearCookie('token',{maxAge:0}).send({success:true})
-    })
+      
+      res.clearCookie('token',{
+        httpOnly:true,
+        secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        // secure:true,
+        // sameSite:'none'
+      })
+      .send({success:true});
+    });
 
 
 
      //service api
-    app.get('/my-jobs/:email',verifyToken,async (req, res) => {
-      console.log('my-jobs', req.decoded);
-      console.log('email',req.params.email);
-      if(req.user.email !== req.params.email){
-        return res.status(403).send({message: 'forbidden access'})
-      }
-      let query = {};
-      if(req.params?.email){
-        query = {email: req.params.email}
-      }
-      const result = await jobCollection.find(query).toArray();
+    // app.get('/my-jobs/:email',verifyToken,async (req, res) => {
+    //   // console.log('my-jobs', req.decoded);
+    //   console.log('email',req.params.email);
+    //   console.log("Backend API hit:", req.params.email); // Check incoming email
+    //   if (!req.params.email) {
+    //       return res.status(400).send({ message: "Email is required" });
+    //   }
+    //   if(req.user.email !== req.params.email){
+    //     return res.status(403).send({message: 'forbidden access'})
+    //   }
+    //   let query = {};
+    //   if(req.params?.email){
+    //     query = {email: req.params.email}
+    //   }
+    //   const result = await jobCollection.find(query).toArray();
+    //   // console.log(result);
+    //   res.send(result);
+    // })
+    app.get("/my-jobs/:id",verifyToken, async (req, res) => {
+      console.log('job', req.cookies);
+      console.log(req.query.email);
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobCollection.findOne(query);
       res.send(result);
-    })
+    });
 
     app.get('/jobs',async (req, res) => {
-      console.log('token owner inf0', req.user);
+      console.log('token owner info', req.user);
      
         const cursor = jobCollection.find();
         const result = await cursor.toArray();
         res.send(result);
     })
+
+
     app.get("/jobs/:id",verifyToken, async (req, res) => {
       console.log('job', req.cookies);
       console.log(req.query.email);
@@ -118,13 +149,15 @@ async function run() {
       // const sortedBids = await bidCollection.find().sort({ status: 1 }).toArray();
       const result = await cursor.toArray();
       res.send(result);
-  })
-    app.get('/my-bids', verifyToken,async (req, res) => {
+  });
+    
+  app.get('/my-bids', verifyToken,async (req, res) => {
       const cursor = bidCollection.find().sort({ status: 1 });
       // const sortedBids = await bidCollection.find().sort({ status: 1 }).toArray();
       const result = await cursor.toArray();
       res.send(result);
-  })
+      console.log(result);
+  });
 
 
     app.post('/bids', verifyToken,async (req, res) => {
